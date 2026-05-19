@@ -180,9 +180,16 @@ engine = GuardrailEngine()
 register_my_rules(engine)
 ```
 
-Check the `plugins/` directory for built-in examples:
+```python
+from vlm_guard import ntd_microscopy
 
-- **`ntd_microscopy`** — 12 rule classes for Neglected Tropical Disease microscopy (migrated from [NTD-Assist](https://github.com/MohamedFakhry2007/ntd-assist))
+engine = GuardrailEngine()
+ntd_microscopy.register_ntd_rules(engine)
+```
+
+Built-in plugin:
+
+- **`vlm_guard.plugins.ntd_microscopy`** — 12 rule classes for Neglected Tropical Disease microscopy (migrated from [NTD-Assist](https://github.com/MohamedFakhry2007/ntd-assist))
 
 ## Rules
 

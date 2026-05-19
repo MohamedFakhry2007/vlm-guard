@@ -1,6 +1,6 @@
 from vlm_guard.core.engine import GuardrailEngine
 
-from plugins.ntd_microscopy.rules import (
+from vlm_guard.plugins.ntd_microscopy.rules import (
     BloodSmearAmbiguityRule,
     ThickSmearRule,
     SampleTypeImpossibilityRule,

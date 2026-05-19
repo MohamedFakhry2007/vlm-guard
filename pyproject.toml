@@ -1,13 +1,13 @@
 [build-system]
 requires = ["setuptools>=64", "wheel"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "vlm-guard"
-version = "0.1.0"
+version = "0.1.1"
 description = "Medical Verification Layer for Multimodal LLMs — composable, auditable guardrails for structured LLM outputs"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "Mohamed Fakhry", email = "mohamed.fakhry@example.com"},
 ]
@@ -19,7 +19,6 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -54,7 +53,7 @@ Source = "https://github.com/MohamedFakhry2007/vlm-guard"
 Tracker = "https://github.com/MohamedFakhry2007/vlm-guard/issues"
 
 [tool.setuptools.packages.find]
-include = ["vlm_guard*"]
+include = ["vlm_guard*", "vlm_guard.plugins*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -3,6 +3,7 @@ from vlm_guard.core.rule import BaseRule, RuleResult
 from vlm_guard.core.engine import GuardrailEngine
 from vlm_guard.core.pipeline import VLMGuardPipeline, PipelineResult
 from vlm_guard.core.audit import AuditTrail, AuditEntry
+from vlm_guard.plugins import ntd_microscopy
 
 __all__ = [
     "Analysis",

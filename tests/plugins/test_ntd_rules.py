@@ -1,5 +1,5 @@
 from vlm_guard import GuardrailEngine, Analysis
-from plugins.ntd_microscopy import register_ntd_rules
+from vlm_guard.plugins.ntd_microscopy import register_ntd_rules
 
 
 def make_analysis(**overrides) -> Analysis:
