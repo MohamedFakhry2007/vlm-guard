@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "vlm-guard"
+version = "0.1.0"
+description = "Medical Verification Layer for Multimodal LLMs — composable, auditable guardrails for structured LLM outputs"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Mohamed Fakhry", email = "mohamed.fakhry@example.com"},
+]
+keywords = [
+    "llm", "multimodal", "guardrails", "medical-ai",
+    "verification", "safety", "hallucination-prevention",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.0.0",
+    "Pillow>=10.0.0",
+]
+
+[project.optional-dependencies]
+image = [
+    "torch>=2.0.0",
+    "transformers>=4.40.0",
+    "bitsandbytes>=0.41.0",
+]
+all = [
+    "vlm-guard[image]",
+    "fpdf>=1.7.2",
+    "accelerate>=0.25.0",
+]
+dev = [
+    "pytest>=7.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/MohamedFakhry2007/vlm-guard"
+Source = "https://github.com/MohamedFakhry2007/vlm-guard"
+Tracker = "https://github.com/MohamedFakhry2007/vlm-guard/issues"
+
+[tool.setuptools.packages.find]
+include = ["vlm_guard*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
