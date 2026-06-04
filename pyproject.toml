@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vlm-guard"
-version = "0.1.2"
-description = "Medical Verification Layer for Multimodal LLMs — composable, auditable guardrails for structured LLM outputs"
+version = "0.2.0"
+description = "Medical Verification Layer for LLMs — composable, auditable guardrails for structured outputs (text + multimodal)"
 readme = "README.md"
 license = "MIT"
 authors = [
@@ -53,7 +53,7 @@ Source = "https://github.com/MohamedFakhry2007/vlm-guard"
 Tracker = "https://github.com/MohamedFakhry2007/vlm-guard/issues"
 
 [tool.setuptools.packages.find]
-include = ["vlm_guard*", "vlm_guard.plugins*"]
+include = ["vlm_guard*", "vlm_guard.plugins*", "plugins*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
