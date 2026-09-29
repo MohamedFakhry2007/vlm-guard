@@ -9,3 +9,6 @@ venv/
 .DS_Store
 dist/
 build/
+
+# Local-only, not for publication
+plugins/apothecare/
