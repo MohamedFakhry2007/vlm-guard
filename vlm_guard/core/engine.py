@@ -7,6 +7,8 @@ class GuardrailEngine:
     def __init__(self):
         self._rules: list[BaseRule] = []
         self._cross_claim_rules: list[CrossClaimRule] = []
+        # Audit trail of the most recent run, kept for convenience. Every run
+        # creates a new trail; use the trail returned by the apply_* methods.
         self.audit = AuditTrail()
 
     def register(self, rule: BaseRule):
@@ -30,17 +32,29 @@ class GuardrailEngine:
     def rules(self) -> list[BaseRule]:
         return list(self._rules)
 
-    def apply(self, analysis: Analysis, context: dict | None = None) -> Analysis:
-        context = context or {}
+    def _apply_rules(
+        self, analysis: Analysis, context: dict, audit: AuditTrail
+    ) -> Analysis:
+        """Run every claim-level rule once, recording into ``audit``.
+
+        A rule may move the status between non-passing states, but once the
+        status has left "pending" it is never downgraded to "passed".
+        """
         result = analysis
         for rule in self._rules:
             if rule.condition(result, context):
+                prior_status = result.validation_status
                 before = result.model_dump()
                 result, rule_result = rule.action(result, context)
+                if (
+                    prior_status not in ("pending", "passed")
+                    and result.validation_status == "passed"
+                ):
+                    result.validation_status = prior_status
                 if rule_result.action_taken:
                     after = result.model_dump()
-                    self.audit.record(rule, before, after, rule_result, context)
-                else:
+                    audit.record(rule, before, after, rule_result, context)
+                elif result.validation_status == "pending":
                     result.validation_status = "passed"
             # If no rule fired, default to pending
             else:
@@ -48,12 +62,27 @@ class GuardrailEngine:
                     result.validation_status = "passed"
         return result
 
+    def apply(self, analysis: Analysis, context: dict | None = None) -> Analysis:
+        """Validate a single analysis. Equivalent to ``apply_with_audit(...)[0]``.
+
+        The audit trail of the run is available as ``engine.audit`` until the
+        next run replaces it.
+        """
+        result, _ = self.apply_with_audit(analysis, context)
+        return result
+
     def apply_with_audit(
         self, analysis: Analysis, context: dict | None = None
     ) -> tuple[Analysis, AuditTrail]:
-        self.audit.clear()
-        result = self.apply(analysis, context)
-        return result, self.audit
+        """Validate a single analysis and return it with a fresh audit trail.
+
+        Each call gets its own ``AuditTrail``; trails returned by earlier calls
+        are never modified afterwards.
+        """
+        audit = AuditTrail()
+        result = self._apply_rules(analysis, context or {}, audit)
+        self.audit = audit
+        return result, audit
 
     def apply_to_claims(
         self,
@@ -68,14 +97,14 @@ class GuardrailEngine:
 
         Returns (modified_claims, modified_answer, audit_trail).
         """
-        self.audit.clear()
+        audit = AuditTrail()
         context = context or {}
 
         # Phase 1: Per-claim validation
         modified_claims = []
         for i, claim in enumerate(claims):
             claim_context = {**context, "claim_index": i, "total_claims": len(claims)}
-            modified = self.apply(claim, claim_context)
+            modified = self._apply_rules(claim, claim_context, audit)
             modified_claims.append(modified)
 
         # Phase 2: Cross-claim validation
@@ -89,9 +118,10 @@ class GuardrailEngine:
                 )
                 if result.action_taken:
                     after_claims = [c.model_dump() for c in modified_claims]
-                    self.audit.record_cross_claim(
+                    audit.record_cross_claim(
                         rule, before_claims, after_claims,
                         before_answer, final_answer, result
                     )
 
-        return modified_claims, final_answer, self.audit
+        self.audit = audit
+        return modified_claims, final_answer, audit

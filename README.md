@@ -181,7 +181,7 @@ register_my_rules(engine)
 ```
 
 ```python
-from vlm_guard import ntd_microscopy
+from vlm_guard.plugins import ntd_microscopy
 
 engine = GuardrailEngine()
 ntd_microscopy.register_ntd_rules(engine)

@@ -14,6 +14,16 @@ def _normalize_text(text: str) -> str:
     return text.replace("\u2264", "<=").replace("\u2265", ">=")
 
 
+# Longest roman forms first so "class iia" is never read as "class i".
+_ROMAN_COR = re.compile(r"\bclass\s+(iii|iib|iia|i)\b")
+_ROMAN_TO_ARABIC = {"i": "1", "iia": "2a", "iib": "2b", "iii": "3"}
+
+
+def _normalize_cor(text: str) -> str:
+    """Rewrite roman-numeral COR levels (class iia) to arabic (class 2a)."""
+    return _ROMAN_COR.sub(lambda m: f"class {_ROMAN_TO_ARABIC[m.group(1)]}", text)
+
+
 class CORLevelRule(BaseRule):
     """Validates Class of Recommendation (COR) levels against known lookup.
 
@@ -42,10 +52,10 @@ class CORLevelRule(BaseRule):
         text = _normalize_text(analysis.claim_text.lower())
         label_lower = analysis.label.lower()
 
+        cor_text = _normalize_cor(text)
         cor_mentioned = None
-        for cor in ["class 1", "class i", "class 2a", "class iia",
-                     "class 2b", "class iib", "class 3", "class iii"]:
-            if cor in text:
+        for cor in ["class 1", "class 2a", "class 2b", "class 3"]:
+            if re.search(rf"\b{cor}\b", cor_text):
                 cor_mentioned = cor
                 break
 

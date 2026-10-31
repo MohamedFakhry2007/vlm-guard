@@ -1,8 +1,6 @@
 import datetime
 import unicodedata
 
-from fpdf import FPDF
-
 from vlm_guard.core.analysis import Analysis
 
 
@@ -21,6 +19,13 @@ def create_ntd_pdf(
     magnification: str,
     patient_context: str = "",
 ) -> bytes:
+    try:
+        from fpdf import FPDF
+    except ImportError as exc:
+        raise ImportError(
+            "PDF reports require the 'fpdf' package: pip install 'vlm-guard[all]'"
+        ) from exc
+
     pdf = FPDF()
     pdf.add_page()
 

@@ -16,6 +16,8 @@ class TextPipelineResult:
     audit: AuditTrail
     retry_count: int = 0
     metadata: dict = field(default_factory=dict)
+    # One audit trail per attempt, in order. ``audit`` is the final attempt's.
+    attempt_audits: list[AuditTrail] = field(default_factory=list)
 
 
 class TextGuardPipeline:
@@ -57,6 +59,7 @@ class TextGuardPipeline:
         claims, answer, raw_dict = self.parser_fn(raw)
 
         claims, answer, audit = self.engine.apply_to_claims(claims, answer, context)
+        attempt_audits = [audit]
 
         retry_count = 0
         status = self._determine_status(claims, audit)
@@ -69,6 +72,7 @@ class TextGuardPipeline:
             claims2, answer2, _ = self.parser_fn(raw2)
             claims2, answer2, audit2 = self.engine.apply_to_claims(claims2, answer2, context)
             claims, answer, audit = claims2, answer2, audit2
+            attempt_audits.append(audit2)
             retry_count = 1
             status = self._determine_status(claims, audit)
 
@@ -82,6 +86,7 @@ class TextGuardPipeline:
             audit=audit,
             retry_count=retry_count,
             metadata={"raw_output_length": len(raw)},
+            attempt_audits=attempt_audits,
         )
 
     def _determine_status(

@@ -51,7 +51,7 @@ class VLMGuardPipeline:
 
         analysis, raw_output = self.parser_fn(raw)
 
-        context = context or {}
+        context = dict(context or {})
         if image_enhanced:
             context["image_enhanced"] = True
 
