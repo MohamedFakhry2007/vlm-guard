@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.2.1 (2026-10-31)
+
+Phase 0 correctness and decoupling fixes (see `docs/hybrid-verification-architecture.md`, section 2.3).
+
+### Fixed
+- `GuardrailEngine`: a claim whose status has left "pending" is never downgraded to "passed". Previously a later rule that matched but took no action overwrote an earlier "blocked" with "passed".
+- HeartSafe `CORLevelRule`: roman numerals are normalised to arabic with word boundaries, so "Class IIa" is no longer read as "Class I" (and "Class I" now matches "Class 1").
+- `parse_to_analysis` / `extract_json`: JSON objects are scanned with `json.JSONDecoder.raw_decode`, so outputs with nested objects (for example `metadata`) no longer fall back to "Unclear"/"Low".
+- `VLMGuardPipeline` no longer writes `image_enhanced` into the caller's context dict.
+- `TextGuardPipeline` keeps every attempt's audit trail.
+
+### Changed
+- Audit trails are per run. `apply()`, `apply_with_audit()` and `apply_to_claims()` each create a new `AuditTrail`; trails returned earlier are never modified. `apply()` is now equivalent to `apply_with_audit()[0]`. `engine.audit` still exists and points at the latest run's trail.
+- `TextPipelineResult.attempt_audits` added: one `AuditTrail` per attempt, in order. `audit` remains the final attempt's trail.
+- `import vlm_guard` no longer imports the NTD plugin. Use `from vlm_guard.plugins import ntd_microscopy`.
+- `vlm_guard.plugins.ntd_microscopy.report` imports `fpdf` only when a PDF is generated, so the module can be imported without `fpdf` installed.
+
 ## v0.2.0 (2026-06-04)
 
 ### Added

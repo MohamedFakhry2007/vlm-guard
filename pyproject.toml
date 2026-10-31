@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vlm-guard"
-version = "0.2.0"
+version = "0.2.1"
 description = "Medical Verification Layer for LLMs — composable, auditable guardrails for structured outputs (text + multimodal)"
 readme = "README.md"
 license = "MIT"
