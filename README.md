@@ -187,9 +187,10 @@ engine = GuardrailEngine()
 ntd_microscopy.register_ntd_rules(engine)
 ```
 
-Built-in plugin:
+Built-in plugins:
 
 - **`vlm_guard.plugins.ntd_microscopy`** — 12 rule classes for Neglected Tropical Disease microscopy (migrated from [NTD-Assist](https://github.com/MohamedFakhry2007/ntd-assist))
+- **`vlm_guard.plugins.heartsafe`**: example cardiology rules (COR level, LVEF threshold, answer consistency). Register with `from vlm_guard.plugins.heartsafe import register_heartsafe_rules`.
 
 ## Rules
 

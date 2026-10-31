@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.2.2 (2026-10-31)
+
+Remaining Phase 0 items (see `docs/hybrid-verification-architecture.md`, section 2.3 E and H, and the negation note in C).
+
+### Changed (breaking)
+- HeartSafe moved from the top-level `plugins.heartsafe` package to `vlm_guard.plugins.heartsafe`. Update imports, for example `from vlm_guard.plugins.heartsafe import register_heartsafe_rules`. The wheel no longer installs a top-level `plugins` package, which could collide with other distributions.
+- `PipelineResult.status` from `VLMGuardPipeline` is now derived from verification only: the most severe of the analysis' `validation_status` and the statuses implied by audit actions (`block` gives "blocked", `flag` gives "flagged", `correct`/`promote` give "corrected"). Possible values are "blocked", "flagged", "unverifiable", "corrected", "passed", and "pending" when no rules are registered. The old "ok"/"low_confidence" values, which came from the model's self-reported confidence, are gone. That confidence is kept in `PipelineResult.metadata["producer_confidence"]`.
+
+### Fixed
+- NTD microscopy rules no longer treat negated findings as evidence. "No flagellated organisms seen" no longer promotes Trypanosomiasis, and "no amastigotes identified" no longer promotes Leishmaniasis. Negated spans are removed per clause before keyword matching. Uncertainty ("cannot be excluded") is not treated as negation, and "no sheath" is still read as a morphological feature. `NegativeValidationRule` still sees the raw text. This is a stopgap until assertion status comes from a clinical NLP component.
+
+### Added
+- `vlm_guard.core.pipeline.derive_status(analysis, audit)`.
+
 ## v0.2.1 (2026-10-31)
 
 Phase 0 correctness and decoupling fixes (see `docs/hybrid-verification-architecture.md`, section 2.3).

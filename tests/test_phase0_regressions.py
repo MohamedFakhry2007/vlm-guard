@@ -18,9 +18,9 @@ from vlm_guard import (
 )
 from vlm_guard.llm.parsing import extract_json, parse_to_analysis
 
-from plugins.heartsafe import register_heartsafe_rules
-from plugins.heartsafe.rules import CORLevelRule
-from plugins.heartsafe.schema import cardiology_claim
+from vlm_guard.plugins.heartsafe import register_heartsafe_rules
+from vlm_guard.plugins.heartsafe.rules import CORLevelRule
+from vlm_guard.plugins.heartsafe.schema import cardiology_claim
 
 
 # ─── 1. Status overwrite ─────────────────────────────────────

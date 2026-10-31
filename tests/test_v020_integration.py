@@ -75,7 +75,7 @@ def test_parse_reasoning_steps():
 # ─── 3. Test COR rule ──────────────────────────────────────
 
 def test_cor_rule_block():
-    from plugins.heartsafe.rules import CORLevelRule
+    from vlm_guard.plugins.heartsafe.rules import CORLevelRule
 
     rule = CORLevelRule()
     engine = GuardrailEngine()
@@ -95,7 +95,7 @@ def test_cor_rule_block():
 
 
 def test_cor_rule_pass():
-    from plugins.heartsafe.rules import CORLevelRule
+    from vlm_guard.plugins.heartsafe.rules import CORLevelRule
 
     rule = CORLevelRule()
     engine = GuardrailEngine()
@@ -116,7 +116,7 @@ def test_cor_rule_pass():
 # ─── 4. Test LVEF threshold rule ──────────────────────────
 
 def test_lvef_correction():
-    from plugins.heartsafe.rules import LVEFThresholdRule
+    from vlm_guard.plugins.heartsafe.rules import LVEFThresholdRule
 
     rule = LVEFThresholdRule()
     engine = GuardrailEngine()
@@ -137,7 +137,7 @@ def test_lvef_correction():
 # ─── 5. Test cross-claim validation ───────────────────────
 
 def test_answer_consistency():
-    from plugins.heartsafe.rules import AnswerConsistencyRule
+    from vlm_guard.plugins.heartsafe.rules import AnswerConsistencyRule
 
     rule = AnswerConsistencyRule()
     engine = GuardrailEngine()
@@ -165,7 +165,7 @@ def test_answer_consistency():
 # ─── 6. Test full pipeline ────────────────────────────────
 
 def test_text_pipeline():
-    from plugins.heartsafe import register_heartsafe_rules
+    from vlm_guard.plugins.heartsafe import register_heartsafe_rules
 
     engine = GuardrailEngine()
     register_heartsafe_rules(engine)
@@ -206,7 +206,7 @@ def test_text_pipeline():
 # ─── 7. Test audit serialization ──────────────────────────
 
 def test_audit_to_dict():
-    from plugins.heartsafe.rules import CORLevelRule
+    from vlm_guard.plugins.heartsafe.rules import CORLevelRule
 
     rule = CORLevelRule()
     engine = GuardrailEngine()

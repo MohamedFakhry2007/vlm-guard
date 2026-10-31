@@ -9,6 +9,38 @@ from vlm_guard.core.engine import GuardrailEngine
 from vlm_guard.core.audit import AuditTrail
 
 
+# Most severe first. "pending" means no rule was registered, so nothing was verified.
+_STATUS_RANK = {
+    "blocked": 5,
+    "flagged": 4,
+    "unverifiable": 3,
+    "corrected": 2,
+    "passed": 1,
+    "pending": 0,
+}
+
+# Audit actions that change or question the output map to the status they imply.
+_ACTION_STATUS = {
+    "block": "blocked",
+    "flag": "flagged",
+    "correct": "corrected",
+    "promote": "corrected",
+}
+
+
+def derive_status(analysis: Analysis, audit: AuditTrail) -> str:
+    """Release status from verification results only.
+
+    Takes the most severe of the analysis' ``validation_status`` and the status
+    implied by each audit action, so a rule that rewrote the output without
+    setting ``validation_status`` still shows up. The producer's self-reported
+    confidence plays no part.
+    """
+    statuses = [analysis.validation_status]
+    statuses += [_ACTION_STATUS[e.action_type] for e in audit.entries if e.action_type in _ACTION_STATUS]
+    return max(statuses, key=lambda s: _STATUS_RANK.get(s, 0))
+
+
 @dataclass
 class PipelineResult:
     analysis: Analysis
@@ -62,8 +94,10 @@ class VLMGuardPipeline:
         return PipelineResult(
             analysis=final,
             raw_output=raw_output,
-            status="ok" if final.confidence != "Low" else "low_confidence",
+            status=derive_status(final, audit),
             elapsed_seconds=elapsed,
             audit=audit,
             image_enhanced=image_enhanced,
+            # The model's own confidence is recorded, never used as a verdict.
+            metadata={"producer_confidence": final.confidence},
         )

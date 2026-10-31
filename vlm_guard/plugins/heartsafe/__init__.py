@@ -1,5 +1,5 @@
 from vlm_guard.core.engine import GuardrailEngine
-from plugins.heartsafe.rules import (
+from vlm_guard.plugins.heartsafe.rules import (
     CORLevelRule,
     LVEFThresholdRule,
     AnswerConsistencyRule,

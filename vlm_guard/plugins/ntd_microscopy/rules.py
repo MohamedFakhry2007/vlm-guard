@@ -1,13 +1,95 @@
+import re
+
 from vlm_guard.core.analysis import Analysis
 from vlm_guard.core.rule import BaseRule, RuleResult
 
 
 def _text(analysis: Analysis) -> str:
+    """Raw lowercased model text, negated statements included."""
     return (
         analysis.findings + " " + analysis.evidence + " "
         + analysis.metadata.get("observed_organisms", "")
         + analysis.metadata.get("observed_background", "")
     ).lower()
+
+
+# --- Negation stopgap ---
+#
+# Keyword rules must not count "no flagellated organisms seen" as evidence of
+# flagellates. Until assertion status comes from a proper clinical NLP
+# component, negated spans are removed before keyword matching.
+#
+# Scope is the clause: text is split at sentence ends, semicolons, colons,
+# newlines and contrast words ("but", "however", ...), never at commas, so
+# "no rings, gametocytes or schizonts" stays negated as a whole.
+
+_CLAUSE_SPLIT = re.compile(
+    r"\.(?!\d)|[;:\n]|\b(?:but|however|although|though|whereas|while)\b"
+)
+
+# Phrases that contain a negation word but are not negations. "no sheath" is
+# itself a morphological feature; the rest express uncertainty, not absence.
+_NOT_NEGATION = re.compile(
+    r"\bno\s+sheath\b|\bcannot\s+(?:be\s+)?(?:excluded?|ruled?\s+out)\b"
+    r"|\bcan\s*not\s+(?:be\s+)?(?:excluded?|ruled?\s+out)\b"
+    r"|\bnot\s+(?:be\s+)?(?:excluded|ruled\s+out)\b|\bnot\s+only\b"
+)
+
+# Cue after the negated words ("trypomastigotes were not seen"): drop the clause.
+_POST_NEGATION = re.compile(
+    r"\b(?:not|never)\s+(?:be\s+|been\s+)?(?:seen|observed|identified|detected|found|"
+    r"visuali[sz]ed|present|appreciated|noted)\b"
+    r"|\w.*?\s+absent\b|\bruled\s+out\b|\bwere\s+excluded\b"
+)
+
+# Cue before the negated words ("no amastigotes"): drop from the cue onward.
+_PRE_NEGATION = re.compile(
+    r"\b(?:no|not|without|none|neither|nor|absence\s+of|absent|negative\s+for|"
+    r"free\s+of|lacks?|lacking|devoid\s+of)\b"
+)
+
+
+def _drop_negated(text: str) -> str:
+    text = text.lower()
+    protected: list[str] = []
+
+    def _protect(m: re.Match) -> str:
+        protected.append(m.group(0))
+        return f"\x00{len(protected) - 1}\x00"
+
+    text = _NOT_NEGATION.sub(_protect, text)
+
+    kept = []
+    pos = 0
+    for m in list(_CLAUSE_SPLIT.finditer(text)) + [None]:
+        end = m.start() if m else len(text)
+        clause = text[pos:end]
+        if _POST_NEGATION.search(clause):
+            clause = ""
+        else:
+            cue = _PRE_NEGATION.search(clause)
+            if cue:
+                clause = clause[:cue.start()]
+        kept.append(clause)
+        if m:
+            kept.append(m.group(0))
+            pos = m.end()
+
+    result = "".join(kept)
+    return re.sub(r"\x00(\d+)\x00", lambda m: protected[int(m.group(1))], result)
+
+
+def _affirmed_text(analysis: Analysis) -> str:
+    """Like ``_text`` but with negated statements removed.
+
+    Each field is scrubbed on its own so a negation at the end of one field
+    cannot swallow the start of the next.
+    """
+    return (
+        _drop_negated(analysis.findings) + " " + _drop_negated(analysis.evidence) + " "
+        + _drop_negated(analysis.metadata.get("observed_organisms", ""))
+        + _drop_negated(analysis.metadata.get("observed_background", ""))
+    )
 
 
 def _sample_lower(context: dict) -> str:
@@ -129,7 +211,7 @@ class BloodSmearAmbiguityRule(BaseRule):
         return s.startswith("blood smear")
 
     def action(self, analysis: Analysis, context: dict) -> tuple[Analysis, RuleResult]:
-        t = _text(analysis)
+        t = _affirmed_text(analysis)
         if _says_microfilaria(t) or _says_sheathed(t):
             analysis.label = "Filariasis"
             analysis.metadata["species"] = "Wuchereria bancrofti"
@@ -193,7 +275,7 @@ class SampleTypeImpossibilityRule(BaseRule):
         return True
 
     def action(self, analysis: Analysis, context: dict) -> tuple[Analysis, RuleResult]:
-        t = _text(analysis)
+        t = _affirmed_text(analysis)
         s = _sample_lower(context)
         label = analysis.label
 
@@ -291,11 +373,11 @@ class LeishmaniasisPromotionRule(BaseRule):
     description = "Promotes to Leishmaniasis when amastigote indicators found"
 
     def condition(self, analysis: Analysis, context: dict) -> bool:
-        return analysis.label != "Leishmaniasis" and _leishmania_indicators(_text(analysis))
+        return analysis.label != "Leishmaniasis" and _leishmania_indicators(_affirmed_text(analysis))
 
     def action(self, analysis: Analysis, context: dict) -> tuple[Analysis, RuleResult]:
         s = _sample_lower(context)
-        if _is_tissue(s) or _says_in_macrophage(_text(analysis)):
+        if _is_tissue(s) or _says_in_macrophage(_affirmed_text(analysis)):
             species = "Leishmania donovani" if any(x in s for x in ["bone", "spleen"]) else "Leishmania spp."
             analysis.label = "Leishmaniasis"
             analysis.confidence = "Medium"
@@ -324,7 +406,7 @@ class MalariaValidationRule(BaseRule):
         return analysis.label == "Malaria"
 
     def action(self, analysis: Analysis, context: dict) -> tuple[Analysis, RuleResult]:
-        t = _text(analysis)
+        t = _affirmed_text(analysis)
         s = _sample_lower(context)
 
         if _is_tissue(s) and not _is_blood(s):
@@ -393,7 +475,7 @@ class TrypanosomiasisValidationRule(BaseRule):
         return analysis.label == "Trypanosomiasis"
 
     def action(self, analysis: Analysis, context: dict) -> tuple[Analysis, RuleResult]:
-        t = _text(analysis)
+        t = _affirmed_text(analysis)
         s = _sample_lower(context)
 
         if _says_in_rbc(t) and not _says_extracellular(t):
@@ -442,7 +524,7 @@ class FilariasisValidationRule(BaseRule):
         return analysis.label == "Filariasis"
 
     def action(self, analysis: Analysis, context: dict) -> tuple[Analysis, RuleResult]:
-        t = _text(analysis)
+        t = _affirmed_text(analysis)
 
         if _says_in_rbc(t) or ("flagell" in t and not _says_microfilaria(t)):
             analysis.label = "Unclear"
@@ -484,7 +566,7 @@ class SchistosomiasisValidationRule(BaseRule):
         return analysis.label == "Schistosomiasis"
 
     def action(self, analysis: Analysis, context: dict) -> tuple[Analysis, RuleResult]:
-        t = _text(analysis)
+        t = _affirmed_text(analysis)
 
         if not _schisto_indicators(t):
             analysis.label = "Unclear"
@@ -520,7 +602,7 @@ class OnchoLoaValidationRule(BaseRule):
         return analysis.label in ("Onchocerciasis", "Loiasis")
 
     def action(self, analysis: Analysis, context: dict) -> tuple[Analysis, RuleResult]:
-        t = _text(analysis)
+        t = _affirmed_text(analysis)
 
         if not _microfilaria_indicators(t):
             analysis.label = "Unclear"
@@ -577,7 +659,7 @@ class UnclearPromotionRule(BaseRule):
         return analysis.label == "Unclear"
 
     def action(self, analysis: Analysis, context: dict) -> tuple[Analysis, RuleResult]:
-        t = _text(analysis)
+        t = _affirmed_text(analysis)
         s = _sample_lower(context)
 
         if _microfilaria_indicators(t) and _says_unsheathed(t) and _says_blunt_tail(t) and "skin" in s:
@@ -738,7 +820,7 @@ class SizeAwareRule(BaseRule):
         return True
 
     def action(self, analysis: Analysis, context: dict) -> tuple[Analysis, RuleResult]:
-        t = _text(analysis)
+        t = _affirmed_text(analysis)
 
         if _says_in_macrophage(t) and any(p in t for p in ["rbc-sized", "same size as rbc", "7 μm", "7 um", "7um", "similar to rbc"]):
             analysis.label = "Unclear"
